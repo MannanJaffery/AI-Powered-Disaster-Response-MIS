@@ -1,14 +1,15 @@
 "use client"
 
-import { useState, useMemo } from "react"
-import { auditLogs } from "@/lib/data"
+import { useState, useMemo, useEffect } from "react"
 import { cn, formatDate } from "@/lib/utils"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Search, CheckCircle2, XCircle, Clock } from "lucide-react"
 import { motion } from "framer-motion"
-import type { Role } from "@/lib/types"
+import api from "@/lib/api"
+import { mapAuditLog } from "@/lib/transforms"
+import type { AuditLog, Role } from "@/lib/types"
 
 const STATUS_ICON = {
   success: <CheckCircle2 size={12} className="text-emerald-400" />,
@@ -39,18 +40,49 @@ const ROLE_LABELS: Record<Role, string> = {
 }
 
 export default function AuditPage() {
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState("")
   const [filterRole, setFilterRole] = useState("all")
   const [filterStatus, setFilterStatus] = useState("all")
 
-  const filtered = useMemo(() => auditLogs.filter((log) => {
+  useEffect(() => {
+    api.get("/api/audit-logs")
+      .then((res) => {
+        setAuditLogs((res.data as Record<string, unknown>[]).map(mapAuditLog))
+      })
+      .catch((err) => {
+        setError(err.response?.data?.detail ?? "Failed to load audit logs.")
+      })
+      .finally(() => setLoading(false))
+  }, [])
+
+  const filtered = useMemo(() => auditLogs.filter((log: AuditLog) => {
     const q = search.toLowerCase()
     return (
       (q === "" || log.user.includes(q) || log.action.toLowerCase().includes(q) || log.target.toLowerCase().includes(q) || log.ipAddress.includes(q)) &&
       (filterRole === "all" || log.role === filterRole) &&
       (filterStatus === "all" || log.status === filterStatus)
     )
-  }), [search, filterRole, filterStatus])
+  }), [auditLogs, search, filterRole, filterStatus])
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-40 text-xs text-muted-foreground">
+        <span className="w-4 h-4 rounded-full border-2 border-border border-t-foreground animate-spin mr-2" />
+        Loading audit logs…
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-3 text-xs text-red-400">
+        {error}
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-5">
@@ -138,6 +170,13 @@ export default function AuditPage() {
                 <TableCell className="px-3 py-2 font-mono text-[10px] text-muted-foreground">{log.ipAddress}</TableCell>
               </motion.tr>
             ))}
+            {filtered.length === 0 && (
+              <tr>
+                <TableCell colSpan={7} className="px-3 py-8 text-xs text-muted-foreground text-center">
+                  No audit log entries found
+                </TableCell>
+              </tr>
+            )}
           </TableBody>
         </Table>
       </div>

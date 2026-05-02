@@ -1,32 +1,79 @@
 "use client"
 
-import { useState } from "react"
-import { teams } from "@/lib/data"
+import { useState, useEffect, useMemo, useCallback } from "react"
 import TeamCard from "@/components/teams/TeamCard"
 import HospitalPanel from "@/components/teams/HospitalPanel"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Search } from "lucide-react"
-import type { TeamStatus, TeamType } from "@/lib/types"
+import api from "@/lib/api"
+import { mapTeam, mapHospital } from "@/lib/transforms"
+import type { Team, Hospital, TeamStatus, TeamType } from "@/lib/types"
 
 export default function TeamsPage() {
+  // 1. Add mounted state to prevent SSR hydration mismatches
+  const [isMounted, setIsMounted] = useState(false)
+  const [teams, setTeams] = useState<Team[]>([])
+  const [hospitals, setHospitals] = useState<Hospital[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState("")
   const [filterStatus, setFilterStatus] = useState<"all" | TeamStatus>("all")
   const [filterType, setFilterType] = useState<"all" | TeamType>("all")
 
-  const filtered = teams.filter((t) => {
+  const fetchAll = useCallback(async () => {
+    const [teamsRes, hosRes] = await Promise.allSettled([
+      api.get("/api/teams"),
+      api.get("/api/hospitals/status"),
+    ])
+    if (teamsRes.status === "fulfilled")
+      setTeams((teamsRes.value.data as Record<string, unknown>[]).map(mapTeam))
+    else setError("Failed to load teams.")
+    if (hosRes.status === "fulfilled")
+      setHospitals((hosRes.value.data as Record<string, unknown>[]).map(mapHospital))
+    setLoading(false)
+  }, [])
+
+  useEffect(() => {
+    setIsMounted(true)
+    fetchAll()
+  }, [fetchAll])
+
+  const filtered = useMemo(() => teams.filter((t: Team) => {
     const q = search.toLowerCase()
     return (
       (q === "" || t.name.toLowerCase().includes(q) || t.lead.toLowerCase().includes(q) || t.location.toLowerCase().includes(q)) &&
       (filterStatus === "all" || t.status === filterStatus) &&
       (filterType === "all" || t.type === filterType)
     )
-  })
+  }), [teams, search, filterStatus, filterType])
 
-  const available = teams.filter((t) => t.status === "available").length
-  const assigned = teams.filter((t) => t.status === "assigned").length
-  const busy = teams.filter((t) => t.status === "busy").length
+  const available = useMemo(() => teams.filter((t: Team) => t.status === "available").length, [teams])
+  const assigned = useMemo(() => teams.filter((t: Team) => t.status === "assigned").length, [teams])
+  const busy = useMemo(() => teams.filter((t: Team) => t.status === "busy").length, [teams])
+
+  // 3. Return null during Server-Side Rendering to ensure HTML matches
+  if (!isMounted) {
+    return null
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-40 text-xs text-muted-foreground">
+        <span className="w-4 h-4 rounded-full border-2 border-border border-t-foreground animate-spin mr-2" />
+        Loading teams…
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-3 text-xs text-red-400">
+        {error}
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-5">
@@ -96,14 +143,17 @@ export default function TeamsPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
             {filtered.map((team, i) => (
-              <TeamCard key={team.id} team={team} index={i} />
+              <TeamCard key={team.id} team={team} index={i} onUpdated={fetchAll} />
             ))}
+            {filtered.length === 0 && (
+              <p className="text-xs text-muted-foreground col-span-full text-center py-8">No teams match your filters</p>
+            )}
           </div>
         </TabsContent>
 
         <TabsContent value="hospitals" className="mt-0">
           <div className="max-w-2xl">
-            <HospitalPanel />
+            <HospitalPanel hospitals={hospitals} onRefresh={fetchAll} />
           </div>
         </TabsContent>
       </Tabs>

@@ -1,51 +1,43 @@
 "use client"
 
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { z } from "zod"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { motion } from "framer-motion"
 import { Shield, AlertTriangle, Eye, EyeOff } from "lucide-react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useRole } from "@/context/RoleContext"
-import type { Role } from "@/lib/types"
-
-const schema = z.object({
-  email: z.string().email("Invalid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
-  role: z.enum(["admin", "operator", "field_officer", "warehouse_manager", "finance"] as const),
-})
-
-type FormData = z.infer<typeof schema>
-
-const ROLES = [
-  { value: "admin", label: "Administrator" },
-  { value: "operator", label: "Emergency Operator" },
-  { value: "field_officer", label: "Field Officer" },
-  { value: "warehouse_manager", label: "Warehouse Manager" },
-  { value: "finance", label: "Finance Officer" },
-]
+import { useAuth } from "@/context/AuthContext"
 
 export default function LoginPage() {
   const router = useRouter()
-  const { setCurrentRole } = useRole()
+  const { login } = useAuth()
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  const { register, handleSubmit, setValue, formState: { errors } } = useForm<FormData>({
-    resolver: zodResolver(schema),
-    defaultValues: { role: "admin" },
-  })
-
-  const onSubmit = async (data: FormData) => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!email || !password) {
+      setError("Email and password are required.")
+      return
+    }
     setLoading(true)
-    await new Promise((r) => setTimeout(r, 900))
-    setCurrentRole(data.role as Role)
-    router.push("/dashboard")
+    setError(null)
+    try {
+      await login(email, password)
+      router.push("/dashboard")
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ??
+        "Invalid credentials. Please try again."
+      setError(msg)
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -80,7 +72,7 @@ export default function LoginPage() {
             </p>
           </div>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
             {/* Email */}
             <div className="space-y-1.5">
               <Label htmlFor="email" className="text-xs text-muted-foreground uppercase tracking-wider">
@@ -89,14 +81,12 @@ export default function LoginPage() {
               <Input
                 id="email"
                 type="email"
-                placeholder="user@drms.gov"
+                placeholder="user@disasterMIS.gov.pk"
                 autoComplete="username"
                 className="bg-input border-border text-sm h-9"
-                {...register("email")}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
               />
-              {errors.email && (
-                <p className="text-xs text-destructive">{errors.email.message}</p>
-              )}
             </div>
 
             {/* Password */}
@@ -111,7 +101,8 @@ export default function LoginPage() {
                   placeholder="••••••••"
                   autoComplete="current-password"
                   className="bg-input border-border text-sm h-9 pr-10"
-                  {...register("password")}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                 />
                 <button
                   type="button"
@@ -121,35 +112,14 @@ export default function LoginPage() {
                   {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
                 </button>
               </div>
-              {errors.password && (
-                <p className="text-xs text-destructive">{errors.password.message}</p>
-              )}
             </div>
 
-            {/* Role */}
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground uppercase tracking-wider">
-                Access Role
-              </Label>
-              <Select
-                defaultValue="admin"
-                onValueChange={(v) => setValue("role", v as Role)}
-              >
-                <SelectTrigger className="bg-input border-border text-sm h-9">
-                  <SelectValue placeholder="Select role" />
-                </SelectTrigger>
-                <SelectContent className="bg-popover border-border">
-                  {ROLES.map((r) => (
-                    <SelectItem key={r.value} value={r.value} className="text-sm">
-                      {r.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.role && (
-                <p className="text-xs text-destructive">{errors.role.message}</p>
-              )}
-            </div>
+            {/* Error message */}
+            {error && (
+              <p className="text-xs text-destructive bg-destructive/10 border border-destructive/20 rounded-md px-3 py-2">
+                {error}
+              </p>
+            )}
 
             <Button
               type="submit"
@@ -167,8 +137,14 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          <p className="text-center text-xs text-muted-foreground mt-6">
-            Demo: any email + password ≥ 6 chars
+          <p className="text-center text-xs text-muted-foreground mt-5">
+            Default password: <span className="font-mono text-foreground/60">Password123</span>
+          </p>
+          <p className="text-center text-xs text-muted-foreground mt-3">
+            No account?{" "}
+            <Link href="/register" className="text-foreground/80 hover:text-foreground underline underline-offset-2 transition-colors">
+              Create one
+            </Link>
           </p>
         </div>
       </motion.div>

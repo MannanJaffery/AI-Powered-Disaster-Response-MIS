@@ -4,6 +4,8 @@ import { motion } from "framer-motion"
 import { MapPin, Users, UserCheck, Clock } from "lucide-react"
 import { cn, formatDate } from "@/lib/utils"
 import type { Team, TeamStatus, TeamType } from "@/lib/types"
+import { useAuth } from "@/context/AuthContext"
+import UpdateTeamStatusModal from "@/components/teams/UpdateTeamStatusModal"
 
 const STATUS_STYLES: Record<TeamStatus, { badge: string; dot: string; label: string }> = {
   available: { badge: "bg-emerald-500/15 text-emerald-400 border-emerald-500/25", dot: "bg-emerald-400", label: "Available" },
@@ -31,9 +33,12 @@ const TYPE_COLORS: Record<TeamType, string> = {
 interface TeamCardProps {
   team: Team
   index: number
+  onUpdated?: () => void
 }
 
-export default function TeamCard({ team, index }: TeamCardProps) {
+export default function TeamCard({ team, index, onUpdated }: TeamCardProps) {
+  const { uiRole } = useAuth()
+  const canManage = uiRole === "admin" || uiRole === "field_officer"
   const status = STATUS_STYLES[team.status]
 
   return (
@@ -51,10 +56,13 @@ export default function TeamCard({ team, index }: TeamCardProps) {
             {TYPE_LABELS[team.type]}
           </p>
         </div>
-        <span className={cn("flex items-center gap-1.5 text-[10px] font-semibold px-2 py-1 rounded-full border uppercase", status.badge)}>
-          <span className={cn("w-1.5 h-1.5 rounded-full", status.dot)} />
-          {status.label}
-        </span>
+        <div className="flex items-center gap-1.5">
+          {canManage && <UpdateTeamStatusModal team={team} onUpdated={onUpdated} />}
+          <span className={cn("flex items-center gap-1.5 text-[10px] font-semibold px-2 py-1 rounded-full border uppercase", status.badge)}>
+            <span className={cn("w-1.5 h-1.5 rounded-full", status.dot)} />
+            {status.label}
+          </span>
+        </div>
       </div>
 
       {/* Details */}

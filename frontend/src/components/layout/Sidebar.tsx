@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
@@ -48,6 +49,14 @@ interface SidebarProps {
 export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const pathname = usePathname()
   const { currentRole } = useRole()
+  
+  // 1. Add mounted state
+  const [isMounted, setIsMounted] = useState(false)
+
+  // 2. Set to true once the component has mounted on the client
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
 
   const visible = navItems.filter((item) => item.roles.includes(currentRole))
 
@@ -81,7 +90,8 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
 
       {/* Nav */}
       <nav className="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto overflow-x-hidden">
-        {visible.map((item) => {
+        {/* 3. Only render the role-filtered links IF the client has mounted */}
+        {isMounted && visible.map((item) => {
           const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href.split("#")[0]))
           return (
             <Link

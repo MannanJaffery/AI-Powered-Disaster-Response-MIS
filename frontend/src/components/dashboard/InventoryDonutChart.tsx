@@ -1,9 +1,24 @@
 "use client"
 
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts"
-import { inventoryByCategory } from "@/lib/data"
 
-const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: Array<{ name: string; value: number; payload: { color: string } }> }) => {
+interface CategoryItem {
+  name: string
+  value: number
+  color: string
+}
+
+interface Props {
+  data: CategoryItem[]
+}
+
+const CustomTooltip = ({
+  active,
+  payload,
+}: {
+  active?: boolean
+  payload?: Array<{ name: string; value: number; payload: { color: string } }>
+}) => {
   if (!active || !payload?.length) return null
   const d = payload[0]
   return (
@@ -14,12 +29,20 @@ const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: Array<
   )
 }
 
-export default function InventoryDonutChart() {
+export default function InventoryDonutChart({ data }: Props) {
+  if (!data.length) {
+    return (
+      <div className="flex items-center justify-center h-[220px] text-xs text-muted-foreground">
+        No inventory data
+      </div>
+    )
+  }
+
   return (
     <ResponsiveContainer width="100%" height={220}>
       <PieChart>
         <Pie
-          data={inventoryByCategory}
+          data={data}
           cx="50%"
           cy="50%"
           innerRadius={60}
@@ -27,7 +50,7 @@ export default function InventoryDonutChart() {
           paddingAngle={3}
           dataKey="value"
         >
-          {inventoryByCategory.map((entry, idx) => (
+          {data.map((entry, idx) => (
             <Cell key={idx} fill={entry.color} stroke="transparent" />
           ))}
         </Pie>

@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog"
@@ -9,28 +10,52 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Siren } from "lucide-react"
-import { useState } from "react"
 import { cn } from "@/lib/utils"
+import { useAuth } from "@/context/AuthContext"
+import api from "@/lib/api"
 import type { DisasterType, Severity } from "@/lib/types"
 
+interface Location {
+  location_id: number
+  city: string
+  district: string
+  province: string
+}
+
 type FormValues = {
-  location: string
+  location_id: string
   type: DisasterType
   severity: Severity
-  casualties: string
   description: string
   reportedAt: string
 }
 
 const SEVERITY_STYLES: Record<Severity, string> = {
-  low: "border-blue-500/40 bg-blue-500/10 text-blue-400",
-  medium: "border-amber-500/40 bg-amber-500/10 text-amber-400",
-  high: "border-orange-500/40 bg-orange-500/10 text-orange-400",
+  low:      "border-blue-500/40 bg-blue-500/10 text-blue-400",
+  medium:   "border-amber-500/40 bg-amber-500/10 text-amber-400",
+  high:     "border-orange-500/40 bg-orange-500/10 text-orange-400",
   critical: "border-red-500/40 bg-red-500/10 text-red-400",
 }
 
-export default function ReportingForm() {
-  const [open, setOpen] = useState(false)
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
+
+interface Props {
+  onCreated?: () => void
+}
+
+export default function ReportingForm({ onCreated }: Props) {
+  const { user } = useAuth()
+  const [open, setOpen]           = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [locations, setLocations]  = useState<Location[]>([])
+
+  useEffect(() => {
+    if (open && locations.length === 0) {
+      api.get("/api/locations")
+        .then((res) => setLocations(res.data as Location[]))
+        .catch(() => toast.error("Failed to load locations."))
+    }
+  }, [open, locations.length])
 
   const {
     register,
@@ -41,10 +66,9 @@ export default function ReportingForm() {
     formState: { errors },
   } = useForm<FormValues>({
     defaultValues: {
-      location: "",
+      location_id: "",
       type: "earthquake",
       severity: "medium",
-      casualties: "0",
       description: "",
       reportedAt: new Date().toISOString().slice(0, 16),
     },
@@ -52,13 +76,30 @@ export default function ReportingForm() {
 
   const severity = watch("severity")
 
-  const onSubmit = (data: FormValues) => {
-    const numCasualties = Math.max(0, parseInt(data.casualties || "0", 10) || 0)
-    toast.success("Incident reported successfully", {
-      description: `${data.type.toUpperCase()} at ${data.location} — Severity: ${data.severity}, Casualties: ${numCasualties}`,
-    })
-    reset()
-    setOpen(false)
+  const onSubmit = async (data: FormValues) => {
+    setSubmitting(true)
+    try {
+      await api.post("/api/incidents", {
+        location_id:   Number(data.location_id),
+        disaster_type: cap(data.type),
+        severity_level: cap(data.severity),
+        description:   data.description,
+        reported_by:   user?.name ?? "Anonymous",
+        reported_at:   data.reportedAt || undefined,
+      })
+      toast.success("Incident reported", {
+        description: `${cap(data.type)} — ${cap(data.severity)} severity`,
+      })
+      reset()
+      setOpen(false)
+      onCreated?.()
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
+        ?? "Failed to report incident."
+      toast.error(msg)
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -81,13 +122,21 @@ export default function ReportingForm() {
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-2">
           {/* Location */}
           <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground uppercase tracking-wider">Location / Zone</Label>
-            <Input
-              placeholder="e.g. Northern District, Sector 4"
-              className="bg-input border-border text-sm h-9"
-              {...register("location", { required: "Location is required", minLength: { value: 3, message: "Must be at least 3 characters" } })}
-            />
-            {errors.location && <p className="text-xs text-destructive">{errors.location.message}</p>}
+            <Label className="text-xs text-muted-foreground uppercase tracking-wider">Location</Label>
+            <Select onValueChange={(v) => setValue("location_id", v)}>
+              <SelectTrigger className="bg-input border-border text-sm h-9">
+                <SelectValue placeholder="Select a location…" />
+              </SelectTrigger>
+              <SelectContent className="bg-popover border-border">
+                {locations.map((l) => (
+                  <SelectItem key={l.location_id} value={String(l.location_id)} className="text-sm">
+                    {l.city}, {l.district} — {l.province}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <input type="hidden" {...register("location_id", { required: "Location is required" })} />
+            {errors.location_id && <p className="text-xs text-destructive">{errors.location_id.message}</p>}
           </div>
 
           {/* Type + Date row */}
@@ -99,7 +148,7 @@ export default function ReportingForm() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-popover border-border">
-                  {(["earthquake", "flood", "fire", "hurricane", "landslide", "explosion", "biological", "other"] as DisasterType[]).map((t) => (
+                  {(["earthquake","flood","fire","hurricane","landslide","explosion","biological","other"] as DisasterType[]).map((t) => (
                     <SelectItem key={t} value={t} className="text-sm capitalize">{t}</SelectItem>
                   ))}
                 </SelectContent>
@@ -125,7 +174,7 @@ export default function ReportingForm() {
               onValueChange={(v) => setValue("severity", v as Severity)}
               className="grid grid-cols-4 gap-2"
             >
-              {(["low", "medium", "high", "critical"] as Severity[]).map((s) => (
+              {(["low","medium","high","critical"] as Severity[]).map((s) => (
                 <div key={s} className="relative">
                   <RadioGroupItem value={s} id={`sev-${s}`} className="sr-only" />
                   <Label
@@ -141,26 +190,6 @@ export default function ReportingForm() {
                 </div>
               ))}
             </RadioGroup>
-          </div>
-
-          {/* Casualties */}
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground uppercase tracking-wider">Reported Casualties</Label>
-            <Input
-              type="number"
-              min={0}
-              max={9999}
-              className="bg-input border-border text-sm h-9 w-32"
-              {...register("casualties", {
-                validate: (v) => {
-                  const n = parseInt(v, 10)
-                  if (isNaN(n) || n < 0) return "Must be 0 or more"
-                  if (n > 9999) return "Max 9999"
-                  return true
-                },
-              })}
-            />
-            {errors.casualties && <p className="text-xs text-destructive">{errors.casualties.message}</p>}
           </div>
 
           {/* Description */}
@@ -182,8 +211,13 @@ export default function ReportingForm() {
             <Button type="button" variant="outline" size="sm" className="h-8 text-xs border-border" onClick={() => setOpen(false)}>
               Cancel
             </Button>
-            <Button type="submit" size="sm" className="h-8 text-xs bg-red-500 hover:bg-red-600 text-white border-0">
-              Submit Report
+            <Button type="submit" size="sm" disabled={submitting} className="h-8 text-xs bg-red-500 hover:bg-red-600 text-white border-0">
+              {submitting ? (
+                <span className="flex items-center gap-1.5">
+                  <span className="w-3 h-3 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                  Submitting…
+                </span>
+              ) : "Submit Report"}
             </Button>
           </DialogFooter>
         </form>

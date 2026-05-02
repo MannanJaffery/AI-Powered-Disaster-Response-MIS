@@ -2,11 +2,22 @@
 
 import { useEffect, useRef, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { liveEmergencyFeed } from "@/lib/data"
 import { formatDate } from "@/lib/utils"
 import { cn } from "@/lib/utils"
 import { AlertTriangle, Info, Package, Activity } from "lucide-react"
 import { ScrollArea } from "@/components/ui/scroll-area"
+
+interface FeedItem {
+  id: string
+  timestamp: string
+  type: string
+  severity: string
+  message: string
+}
+
+interface Props {
+  items: FeedItem[]
+}
 
 const TYPE_CONFIG = {
   alert: { icon: <AlertTriangle size={12} />, color: "text-red-400", border: "border-l-red-500" },
@@ -22,27 +33,37 @@ const SEV_BADGE = {
   low: "bg-blue-500/15 text-blue-400 border border-blue-500/25",
 }
 
-export default function EmergencyFeed() {
-  const [items, setItems] = useState(liveEmergencyFeed)
-  const intervalRef = useRef<NodeJS.Timeout | null>(null)
+export default function EmergencyFeed({ items }: Props) {
+  const [displayItems, setDisplayItems] = useState(items)
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
+    setDisplayItems(items)
+  }, [items])
+
+  useEffect(() => {
+    if (items.length < 2) return
     intervalRef.current = setInterval(() => {
-      setItems((prev) => {
-        const shuffled = [...prev].sort(() => Math.random() - 0.5)
-        return shuffled
-      })
+      setDisplayItems((prev) => [...prev].sort(() => Math.random() - 0.5))
     }, 7000)
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current)
     }
-  }, [])
+  }, [items])
+
+  if (items.length === 0) {
+    return (
+      <div className="h-80 flex items-center justify-center text-xs text-muted-foreground">
+        No active alerts
+      </div>
+    )
+  }
 
   return (
     <ScrollArea className="h-80">
       <div className="space-y-1 pr-2">
         <AnimatePresence initial={false}>
-          {items.map((item) => {
+          {displayItems.map((item) => {
             const cfg = TYPE_CONFIG[item.type as keyof typeof TYPE_CONFIG] ?? TYPE_CONFIG.info
             const sevStyle = SEV_BADGE[item.severity as keyof typeof SEV_BADGE]
             return (
@@ -64,9 +85,11 @@ export default function EmergencyFeed() {
                     <span className="uppercase tracking-wider">{item.type}</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <span className={cn("text-[10px] font-semibold px-1.5 py-0.5 rounded-full uppercase", sevStyle)}>
-                      {item.severity}
-                    </span>
+                    {sevStyle && (
+                      <span className={cn("text-[10px] font-semibold px-1.5 py-0.5 rounded-full uppercase", sevStyle)}>
+                        {item.severity}
+                      </span>
+                    )}
                     <span className="text-[10px] text-muted-foreground tabular-nums">
                       {formatDate(item.timestamp)}
                     </span>

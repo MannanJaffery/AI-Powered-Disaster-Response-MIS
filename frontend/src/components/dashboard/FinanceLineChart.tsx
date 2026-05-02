@@ -10,8 +10,12 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts"
-import { financeData } from "@/lib/data"
 import { formatCurrency } from "@/lib/utils"
+import type { FinanceRecord } from "@/lib/types"
+
+interface Props {
+  data: FinanceRecord[]
+}
 
 const CustomTooltip = ({
   active,
@@ -35,23 +39,54 @@ const CustomTooltip = ({
   )
 }
 
-export default function FinanceLineChart() {
-  const recent = financeData.slice(-14)
+export default function FinanceLineChart({ data }: Props) {
+  const recent = data.slice(-14)
+
+  if (!recent.length) {
+    return (
+      <div className="flex items-center justify-center h-[220px] text-xs text-muted-foreground">
+        No financial data
+      </div>
+    )
+  }
 
   return (
     <ResponsiveContainer width="100%" height={220}>
       <LineChart data={recent} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
         <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#64748b" }} axisLine={false} tickLine={false} />
-        <YAxis tick={{ fontSize: 10, fill: "#64748b" }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
+        <YAxis
+          tick={{ fontSize: 10, fill: "#64748b" }}
+          axisLine={false}
+          tickLine={false}
+          tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`}
+        />
         <Tooltip content={<CustomTooltip />} />
         <Legend
           iconType="plainline"
           iconSize={16}
-          formatter={(value) => <span className="text-xs text-muted-foreground capitalize">{value}</span>}
+          formatter={(value) => (
+            <span className="text-xs text-muted-foreground capitalize">{value}</span>
+          )}
         />
-        <Line type="monotone" dataKey="donations" name="Donations" stroke="#10b981" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
-        <Line type="monotone" dataKey="expenses" name="Expenses" stroke="#ef4444" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
+        <Line
+          type="monotone"
+          dataKey="donations"
+          name="Donations"
+          stroke="#10b981"
+          strokeWidth={2}
+          dot={false}
+          activeDot={{ r: 4 }}
+        />
+        <Line
+          type="monotone"
+          dataKey="expenses"
+          name="Expenses"
+          stroke="#ef4444"
+          strokeWidth={2}
+          dot={false}
+          activeDot={{ r: 4 }}
+        />
       </LineChart>
     </ResponsiveContainer>
   )

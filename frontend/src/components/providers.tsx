@@ -1,12 +1,12 @@
 "use client"
 
-import { RoleProvider } from "@/context/RoleContext"
+import { AuthProvider } from "@/context/AuthContext"
 import { Toaster } from "sonner"
 import type { ReactNode } from "react"
 
 export default function Providers({ children }: { children: ReactNode }) {
   return (
-    <RoleProvider>
+    <AuthProvider>
       {children}
       <Toaster
         theme="dark"
@@ -19,6 +19,6 @@ export default function Providers({ children }: { children: ReactNode }) {
           },
         }}
       />
-    </RoleProvider>
+    </AuthProvider>
   )
 }

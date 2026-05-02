@@ -1,7 +1,9 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { Bell, Menu, LogOut, User, ChevronDown } from "lucide-react"
 import { useRole } from "@/context/RoleContext"
+import { useAuth } from "@/context/AuthContext"
 import type { Role } from "@/lib/types"
 import {
   DropdownMenu,
@@ -12,8 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import Link from "next/link"
+import { useRouter } from "next/navigation"
 
 const ROLES: { value: Role; label: string }[] = [
   { value: "admin", label: "Administrator" },
@@ -37,7 +38,22 @@ interface TopbarProps {
 
 export default function Topbar({ onMenuToggle }: TopbarProps) {
   const { currentRole, setCurrentRole } = useRole()
+  const { user, logout } = useAuth()
+  const router = useRouter()
+  
+  // 1. Add mounted state to prevent hydration mismatches
+  const [isMounted, setIsMounted] = useState(false)
+
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
+
   const currentRoleLabel = ROLES.find((r) => r.value === currentRole)?.label ?? currentRole
+
+  const handleLogout = () => {
+    logout()
+    router.push("/login")
+  }
 
   return (
     <header className="flex items-center justify-between h-14 px-4 border-b border-border bg-card shrink-0">
@@ -55,57 +71,65 @@ export default function Topbar({ onMenuToggle }: TopbarProps) {
       </div>
 
       {/* Right: alerts + role switcher + user */}
-      <div className="flex items-center gap-2">
-        {/* Alert bell */}
-        <Button variant="ghost" size="icon" className="relative h-8 w-8 text-muted-foreground">
-          <Bell size={16} />
-          <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-        </Button>
-
-        {/* Role switcher */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium border transition-colors ${ROLE_COLORS[currentRole]}`}>
-              {currentRoleLabel}
-              <ChevronDown size={12} />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-52 bg-popover border-border">
-            <DropdownMenuLabel className="text-xs text-muted-foreground">Switch Role</DropdownMenuLabel>
-            <DropdownMenuSeparator className="bg-border" />
-            {ROLES.map((role) => (
-              <DropdownMenuItem
-                key={role.value}
-                onClick={() => setCurrentRole(role.value)}
-                className={`text-xs cursor-pointer ${currentRole === role.value ? "bg-accent" : ""}`}
-              >
-                {role.label}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        {/* User menu */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
-              <User size={16} />
+      <div className="flex items-center gap-2 justify-end min-w-[200px]">
+        {/* 2. Only render dynamic user/role data after the client has mounted */}
+        {isMounted && (
+          <>
+            {/* Alert bell */}
+            <Button variant="ghost" size="icon" className="relative h-8 w-8 text-muted-foreground">
+              <Bell size={16} />
+              <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
             </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-44 bg-popover border-border">
-            <DropdownMenuLabel className="text-xs">
-              <p className="font-medium text-foreground">Admin User</p>
-              <p className="text-muted-foreground font-normal">admin@drms.gov</p>
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator className="bg-border" />
-            <DropdownMenuItem asChild>
-              <Link href="/login" className="flex items-center gap-2 text-xs text-destructive cursor-pointer">
-                <LogOut size={13} />
-                Sign Out
-              </Link>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+
+            {/* Role switcher */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium border transition-colors ${ROLE_COLORS[currentRole]}`}
+                >
+                  {currentRoleLabel}
+                  <ChevronDown size={12} />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-52 bg-popover border-border">
+                <DropdownMenuLabel className="text-xs text-muted-foreground">Switch View</DropdownMenuLabel>
+                <DropdownMenuSeparator className="bg-border" />
+                {ROLES.map((role) => (
+                  <DropdownMenuItem
+                    key={role.value}
+                    onClick={() => setCurrentRole(role.value)}
+                    className={`text-xs cursor-pointer ${currentRole === role.value ? "bg-accent" : ""}`}
+                  >
+                    {role.label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* User menu */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
+                  <User size={16} />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-44 bg-popover border-border">
+                <DropdownMenuLabel className="text-xs">
+                  <p className="font-medium text-foreground">{user?.name ?? "User"}</p>
+                  <p className="text-muted-foreground font-normal truncate">{user?.email ?? ""}</p>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator className="bg-border" />
+                <DropdownMenuItem
+                  onClick={handleLogout}
+                  className="flex items-center gap-2 text-xs text-destructive cursor-pointer"
+                >
+                  <LogOut size={13} />
+                  Sign Out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </>
+        )}
       </div>
     </header>
   )
