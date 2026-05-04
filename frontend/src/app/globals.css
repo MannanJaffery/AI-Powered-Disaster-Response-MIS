@@ -26,32 +26,58 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-inter);
   --font-mono: var(--font-geist-mono);
 }
 
-/* Command Center — forced dark palette */
+/* ─── Light Mode (default) ─── */
 :root {
-  --background: #060c1a;
-  --foreground: #e2e8f0;
-  --card: #0d1526;
-  --card-foreground: #e2e8f0;
-  --popover: #111c30;
-  --popover-foreground: #e2e8f0;
-  --primary: #e2e8f0;
-  --primary-foreground: #060c1a;
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --card: rgba(255,255,255,0.9);
+  --card-foreground: #0f172a;
+  --popover: #ffffff;
+  --popover-foreground: #0f172a;
+  --primary: #2563eb;
+  --primary-foreground: #ffffff;
+  --secondary: #f1f5f9;
+  --secondary-foreground: #334155;
+  --muted: #e2e8f0;
+  --muted-foreground: #64748b;
+  --accent: #e11d48;
+  --accent-foreground: #ffffff;
+  --destructive: #e11d48;
+  --destructive-foreground: #fff1f2;
+  --border: rgba(148,163,184,0.3);
+  --input: #ffffff;
+  --ring: #2563eb;
+  --radius: 0.5rem;
+  color-scheme: light;
+}
+
+/* ─── Dark Mode ─── */
+.dark {
+  --background: #020617;
+  --foreground: #f8fafc;
+  --card: rgba(15,23,42,0.8);
+  --card-foreground: #f8fafc;
+  --popover: #0f172a;
+  --popover-foreground: #f8fafc;
+  --primary: #3b82f6;
+  --primary-foreground: #ffffff;
   --secondary: #1e293b;
-  --secondary-foreground: #94a3b8;
+  --secondary-foreground: #cbd5e1;
   --muted: #1e293b;
   --muted-foreground: #64748b;
-  --accent: #1e3a5f;
-  --accent-foreground: #93c5fd;
-  --destructive: #ef4444;
-  --destructive-foreground: #fef2f2;
-  --border: #1e293b;
-  --input: #162032;
+  --accent: #f43f5e;
+  --accent-foreground: #ffffff;
+  --destructive: #f43f5e;
+  --destructive-foreground: #fff1f2;
+  --border: rgba(30,41,59,0.8);
+  --input: #0f172a;
   --ring: #3b82f6;
-  --radius: 0.375rem;
+  --radius: 0.5rem;
+  color-scheme: dark;
 }
 
 *,
@@ -61,18 +87,112 @@
   box-sizing: border-box;
 }
 
-html {
-  color-scheme: dark;
-}
-
 body {
   background-color: var(--background);
   color: var(--foreground);
   font-feature-settings: "rlig" 1, "calt" 1;
   -webkit-font-smoothing: antialiased;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-/* Thin, dark scrollbars */
+/* ─── Glassmorphism utility ─── */
+.glass {
+  background: var(--card);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid var(--border);
+}
+
+.glass-strong {
+  background: var(--card);
+  backdrop-filter: blur(24px) saturate(200%);
+  -webkit-backdrop-filter: blur(24px) saturate(200%);
+  border: 1px solid var(--border);
+}
+
+/* ─── Gradient text utility ─── */
+.gradient-text {
+  background: linear-gradient(135deg, #1e3a8a, #2563eb, #3b82f6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.dark .gradient-text {
+  background: linear-gradient(135deg, #60a5fa, #3b82f6, #93c5fd);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ─── Gradient backgrounds ─── */
+.gradient-primary {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+}
+
+.gradient-hero {
+  background: 
+    radial-gradient(ellipse at 20% 50%, rgba(37,99,235,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(225,29,72,0.05) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 80%, rgba(59,130,246,0.05) 0%, transparent 50%);
+}
+
+.dark .gradient-hero {
+  background: 
+    radial-gradient(ellipse at 20% 50%, rgba(59,130,246,0.1) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(244,63,94,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 80%, rgba(96,165,250,0.05) 0%, transparent 50%);
+}
+
+/* ─── Animated grid background ─── */
+.grid-bg {
+  background-image: 
+    linear-gradient(var(--border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+
+/* ─── Subtle noise overlay ─── */
+.noise-overlay::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  pointer-events: none;
+}
+
+/* ─── Pulse ring animation ─── */
+@keyframes pulse-ring {
+  0% { transform: scale(0.8); opacity: 0.8; }
+  50% { transform: scale(1.2); opacity: 0.3; }
+  100% { transform: scale(0.8); opacity: 0.8; }
+}
+
+.animate-pulse-ring {
+  animation: pulse-ring 3s ease-in-out infinite;
+}
+
+/* ─── Floating animation ─── */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+/* ─── Glow effect ─── */
+.glow {
+  box-shadow: 0 0 20px rgba(37,99,235,0.1), 0 0 60px rgba(37,99,235,0.05);
+}
+
+.dark .glow {
+  box-shadow: 0 0 20px rgba(59,130,246,0.15), 0 0 60px rgba(59,130,246,0.05);
+}
+
+/* ─── Thin scrollbars ─── */
 ::-webkit-scrollbar {
   width: 5px;
   height: 5px;
@@ -81,9 +201,19 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #1e293b;
+  background: var(--muted);
   border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #334155;
+  background: var(--muted-foreground);
+}
+
+/* ─── Selection ─── */
+::selection {
+  background: rgba(37,99,235,0.2);
+  color: var(--foreground);
+}
+
+.dark ::selection {
+  background: rgba(59,130,246,0.3);
 }

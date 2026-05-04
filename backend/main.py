@@ -360,7 +360,7 @@ def get_financial_summary(user=Depends(require_role(["Administrator", "Finance O
     return fetch_data("SELECT * FROM vw_FinancialSummary ORDER BY transaction_date DESC")
 
 @app.get("/api/teams")
-def get_rescue_teams(user=Depends(require_role(["Administrator", "Field Officer"]))):
+def get_rescue_teams(user=Depends(require_role(["Administrator", "Field Officer", "Emergency Operator"]))):
     return fetch_data("SELECT * FROM vw_RescueTeamStatus")
 
 @app.get("/api/hospitals")
@@ -1247,6 +1247,68 @@ def test_index_performance(user=Depends(require_role(["Administrator"]))):
             "index_recommendation": "For optimal performance, ensure a composite index exists on (status, severity_level)."
         }
     except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        conn.close()
+
+# =========================
+# PUBLIC ENDPOINTS (no auth)
+# =========================
+@app.get("/api/public/locations")
+def get_public_locations():
+    return fetch_data("SELECT location_id, city, district, province, latitude, longitude FROM Locations ORDER BY city")
+
+@app.get("/api/public/stats")
+def get_public_stats():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        stats = {}
+        cursor.execute("SELECT COUNT(*) FROM EmergencyReports WHERE status IN ('Resolved','Contained')")
+        stats["incidents_resolved"] = cursor.fetchone()[0]
+        cursor.execute("SELECT COUNT(*) FROM RescueTeams WHERE availability = 'Available'")
+        stats["teams_ready"] = cursor.fetchone()[0]
+        cursor.execute("SELECT ISNULL(SUM(quantity), 0) FROM WarehouseInventory")
+        stats["resources_available"] = cursor.fetchone()[0]
+        cursor.execute("SELECT COUNT(*) FROM Hospitals WHERE is_active = 1")
+        stats["hospitals_connected"] = cursor.fetchone()[0]
+        return stats
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        conn.close()
+
+@app.post("/api/public/report-incident")
+async def public_report_incident(request: Request):
+    data          = await request.json()
+    location_id   = data.get("location_id")
+    disaster_type = data.get("disaster_type")
+    severity_level = data.get("severity_level")
+    description   = str(data.get("description", "")).strip()
+    reported_by   = str(data.get("reported_by", "Anonymous Citizen")).strip() or "Anonymous Citizen"
+
+    if not all([location_id, disaster_type, severity_level, description]):
+        raise HTTPException(status_code=400, detail="location_id, disaster_type, severity_level, and description are required.")
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT location_id FROM Locations WHERE location_id = ?", location_id)
+        if not cursor.fetchone():
+            raise HTTPException(status_code=400, detail="Invalid location_id.")
+        cursor.execute(
+            """INSERT INTO EmergencyReports
+               (location_id, disaster_type, severity_level, reported_by, description, status)
+               VALUES (?, ?, ?, ?, ?, 'Pending')""",
+            location_id, disaster_type, severity_level, reported_by, description
+        )
+        conn.commit()
+        return {"message": "Incident reported successfully. Thank you for helping keep your community safe."}
+    except HTTPException:
+        conn.rollback()
+        raise
+    except Exception as e:
+        conn.rollback()
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         conn.close()

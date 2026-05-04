@@ -27,7 +27,7 @@ const CustomBarTooltip = ({
 }) => {
   if (!active || !payload?.length) return null
   return (
-    <div className="bg-popover border border-border rounded-md px-3 py-2.5 text-xs shadow-xl space-y-1">
+    <div className="bg-popover border border-border rounded-xl px-3 py-2.5 text-xs shadow-xl space-y-1">
       <p className="font-medium text-foreground">{label}</p>
       {payload.map((p) => (
         <p key={p.name} style={{ color: p.color }}>
@@ -94,7 +94,7 @@ export default function FinancePage() {
 
   if (error) {
     return (
-      <div className="bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-3 text-xs text-red-400">
+      <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 text-xs text-red-400">
         {error}
       </div>
     )
@@ -119,7 +119,7 @@ export default function FinancePage() {
           { label: "Budget Remaining", value: formatCurrency(budgetRemaining), icon: <AlertTriangle size={14} />, color: budgetRemaining < 0 ? "text-red-400" : "text-blue-400", bg: "bg-blue-500/10 border-blue-500/20" },
         ].map((s, i) => (
           <motion.div key={s.label} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
-            className={cn("bg-card rounded-lg border px-4 py-3 flex items-start justify-between", s.bg)}>
+            className={cn("bg-card rounded-2xl border px-4 py-3 flex items-start justify-between", s.bg)}>
             <div>
               <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{s.label}</p>
               <p className={cn("text-xl font-bold tabular-nums mt-1", s.color)}>{s.value}</p>
@@ -150,9 +150,9 @@ export default function FinancePage() {
             {budgetByEvent.length > 0 ? (
               <ResponsiveContainer width="100%" height={220}>
                 <BarChart data={budgetByEvent} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                  <XAxis dataKey="event" tick={{ fontSize: 9, fill: "#64748b" }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 10, fill: "#64748b" }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                  <XAxis dataKey="event" tick={{ fontSize: 9, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
                   <Tooltip content={<CustomBarTooltip />} />
                   <Bar dataKey="allocated" name="Allocated" fill="#3b82f6" radius={[3, 3, 0, 0]} opacity={0.5} />
                   <Bar dataKey="spent" name="Spent" fill="#10b981" radius={[3, 3, 0, 0]} />

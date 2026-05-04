@@ -30,7 +30,7 @@ export default function KPICard({ title, value, subtitle, icon, trend, accent = 
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className={cn("relative bg-card rounded-lg border p-4 overflow-hidden", styles.border)}
+      className={cn("relative bg-card backdrop-blur-sm rounded-2xl border p-4 overflow-hidden hover:shadow-md transition-shadow", styles.border)}
     >
       {/* Subtle background glow */}
       <div className={cn("absolute top-0 right-0 w-24 h-24 rounded-full blur-3xl opacity-20 -translate-y-6 translate-x-6", styles.bg)} />

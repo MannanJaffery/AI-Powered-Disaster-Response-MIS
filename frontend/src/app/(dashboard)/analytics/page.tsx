@@ -27,7 +27,7 @@ const DISASTER_COLORS: Record<string, string> = {
 const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ name: string; value: number; color?: string }>; label?: string }) => {
   if (!active || !payload?.length) return null
   return (
-    <div className="bg-popover border border-border rounded-md px-3 py-2.5 text-xs shadow-xl space-y-1">
+    <div className="bg-popover border border-border rounded-xl px-3 py-2.5 text-xs shadow-xl space-y-1">
       <p className="font-medium text-foreground">{label}</p>
       {payload.map((p) => (
         <p key={p.name} style={p.color ? { color: p.color } : {}} className="text-muted-foreground">
@@ -116,7 +116,7 @@ export default function AnalyticsPage() {
           { label: "Critical", value: criticalCount, color: "text-red-400" },
           { label: "Team Utilization", value: `${teamUtilization}%`, color: teamUtilization > 80 ? "text-red-400" : "text-blue-400" },
         ].map((s) => (
-          <div key={s.label} className="bg-card border border-border rounded-lg px-4 py-3">
+          <div key={s.label} className="bg-card backdrop-blur-sm border border-border rounded-2xl px-4 py-3">
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{s.label}</p>
             <p className={`text-2xl font-bold tabular-nums mt-0.5 ${s.color}`}>{s.value}</p>
           </div>
@@ -134,9 +134,9 @@ export default function AnalyticsPage() {
             {responseTime.length > 0 ? (
               <ResponsiveContainer width="100%" height={240}>
                 <BarChart data={responseTime} margin={{ top: 4, right: 4, left: -20, bottom: 0 }} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" horizontal={false} />
-                  <XAxis type="number" tick={{ fontSize: 10, fill: "#64748b" }} axisLine={false} tickLine={false} unit=" min" />
-                  <YAxis dataKey="region" type="category" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} width={70} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
+                  <XAxis type="number" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} unit=" min" />
+                  <YAxis dataKey="region" type="category" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} width={70} />
                   <Tooltip content={<CustomTooltip />} />
                   <Bar dataKey="avgMinutes" name="Avg Minutes" radius={[0, 3, 3, 0]}>
                     {responseTime.map((entry, i) => (
@@ -174,7 +174,7 @@ export default function AnalyticsPage() {
                       if (!active || !payload?.length) return null
                       const d = payload[0]
                       return (
-                        <div className="bg-popover border border-border rounded-md px-3 py-2 text-xs shadow-xl">
+                        <div className="bg-popover border border-border rounded-xl px-3 py-2 text-xs shadow-xl">
                           <p className="font-medium text-foreground">{d.name}</p>
                           <p className="text-muted-foreground">{d.value} incidents</p>
                         </div>
@@ -210,7 +210,7 @@ export default function AnalyticsPage() {
                 low: { badge: "bg-blue-500/15 border-blue-500/25", text: "text-blue-400" },
               }[sev]
               return (
-                <div key={sev} className={`p-3 rounded-lg border ${colors.badge} text-center`}>
+                <div key={sev} className={`p-3 rounded-xl border ${colors.badge} text-center`}>
                   <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">{sev}</p>
                   <p className={`text-2xl font-bold tabular-nums ${colors.text}`}>{count}</p>
                   <p className="text-[10px] text-muted-foreground mt-0.5">{pct}% of total</p>
@@ -261,9 +261,9 @@ function IncidentSummaryChart({ data }: { data: IncidentSummaryRow[] }) {
         {chartData.length > 0 ? (
           <ResponsiveContainer width="100%" height={260}>
             <BarChart data={chartData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-              <XAxis dataKey="type" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 10, fill: "#64748b" }} axisLine={false} tickLine={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+              <XAxis dataKey="type" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
               <Tooltip content={<CustomTooltip />} />
               <Legend iconType="circle" iconSize={8} formatter={(v) => <span className="text-xs text-muted-foreground">{v}</span>} />
               {Object.keys(SEV_COLORS).map((sev) => (
@@ -312,9 +312,9 @@ function ResourceUtilChart({ data }: { data: ResourceUtilRow[] }) {
         {chartData.length > 0 ? (
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={chartData} margin={{ top: 4, right: 16, left: -20, bottom: 0 }} layout="vertical">
-              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" horizontal={false} />
-              <XAxis type="number" tick={{ fontSize: 10, fill: "#64748b" }} axisLine={false} tickLine={false} />
-              <YAxis dataKey="resource_type" type="category" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} width={70} />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
+              <XAxis type="number" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
+              <YAxis dataKey="resource_type" type="category" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} width={70} />
               <Tooltip content={<CustomTooltip />} />
               <Bar dataKey="total_qty" name="Total Qty" radius={[0, 3, 3, 0]} maxBarSize={22}>
                 {chartData.map((entry, i) => (

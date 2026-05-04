@@ -21,7 +21,7 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && !isLoginEndpoint && typeof window !== "undefined") {
       localStorage.removeItem("drms_token")
       localStorage.removeItem("drms_user")
-      window.location.href = "/login"
+      window.location.href = "/auth"
     }
     return Promise.reject(error)
   }

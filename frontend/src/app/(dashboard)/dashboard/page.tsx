@@ -125,14 +125,14 @@ export default function DashboardPage() {
       </div>
 
       <Tabs defaultValue={defaultTab} className="space-y-5">
-        <TabsList className="bg-card border border-border h-8 p-0.5">
-          <TabsTrigger value="operations" className="text-xs h-7 px-3 data-[state=active]:bg-accent data-[state=active]:text-accent-foreground">
+        <TabsList className="bg-card border border-border h-9 p-0.5 rounded-xl">
+          <TabsTrigger value="operations" className="text-xs h-8 px-4 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             Emergency Operations
           </TabsTrigger>
-          <TabsTrigger value="warehouse" className="text-xs h-7 px-3 data-[state=active]:bg-accent data-[state=active]:text-accent-foreground">
+          <TabsTrigger value="warehouse" className="text-xs h-8 px-4 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             Warehouse
           </TabsTrigger>
-          <TabsTrigger value="finance" className="text-xs h-7 px-3 data-[state=active]:bg-accent data-[state=active]:text-accent-foreground">
+          <TabsTrigger value="finance" className="text-xs h-8 px-4 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             Finance
           </TabsTrigger>
         </TabsList>
@@ -205,7 +205,7 @@ export default function DashboardPage() {
                       const pct = h.totalBeds > 0 ? Math.round(((h.totalBeds - h.availableBeds) / h.totalBeds) * 100) : 0
                       const isCritical = pct >= 90
                       return (
-                        <div key={h.id} className={cn("p-3 rounded-md border", isCritical ? "border-red-500/30 bg-red-500/5" : "border-border bg-secondary/30")}>
+                        <div key={h.id} className={cn("p-3 rounded-xl border", isCritical ? "border-red-500/30 bg-red-500/5" : "border-border bg-secondary/30")}>
                           <p className="text-xs font-medium text-foreground truncate mb-1">{h.name}</p>
                           <p className={cn("text-xl font-bold tabular-nums", isCritical ? "text-red-400" : "text-foreground")}>{pct}%</p>
                           <p className="text-[10px] text-muted-foreground">{h.availableBeds} beds free</p>

@@ -1,1 +1,1 @@
-SELECT * FROM EmergencyReports
+SELECT * FROM Users

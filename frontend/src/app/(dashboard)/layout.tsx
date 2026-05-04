@@ -10,7 +10,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   useEffect(() => {
     const token = typeof window !== "undefined" ? localStorage.getItem("drms_token") : null
     if (!token) {
-      router.replace("/login")
+      router.replace("/auth")
     }
   }, [router])
 

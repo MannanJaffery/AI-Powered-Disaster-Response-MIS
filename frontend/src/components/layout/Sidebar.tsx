@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import {
   LayoutDashboard,
@@ -17,9 +17,12 @@ import {
   ChevronRight,
   Activity,
   Layers,
+  LogOut
 } from "lucide-react"
+
 import { cn } from "@/lib/utils"
 import { useRole } from "@/context/RoleContext"
+import { useAuth } from "@/context/AuthContext"
 import type { Role } from "@/lib/types"
 
 interface NavItem {
@@ -49,37 +52,38 @@ interface SidebarProps {
 export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const pathname = usePathname()
   const { currentRole } = useRole()
-  
-  // 1. Add mounted state
+  const { logout } = useAuth()
+  const router = useRouter()
+
   const [isMounted, setIsMounted] = useState(false)
 
-  // 2. Set to true once the component has mounted on the client
   useEffect(() => {
     setIsMounted(true)
   }, [])
 
-  const visible = navItems.filter((item) => item.roles.includes(currentRole))
+  // Safely check that currentRole exists before filtering to prevent crashes
+  const visible = navItems.filter((item) => currentRole && item.roles.includes(currentRole))
 
   return (
     <motion.aside
-      animate={{ width: collapsed ? 64 : 220 }}
-      transition={{ duration: 0.2, ease: "easeInOut" }}
-      className="relative flex flex-col h-full bg-card border-r border-border overflow-hidden shrink-0"
+      animate={{ width: collapsed ? 64 : 240 }}
+      transition={{ duration: 0.25, ease: "easeInOut" }}
+      className="relative flex flex-col h-full glass-strong overflow-hidden shrink-0"
     >
       {/* Logo / Brand */}
-      <div className="flex items-center h-14 px-4 border-b border-border shrink-0">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="flex items-center justify-center w-7 h-7 rounded bg-red-500/20 border border-red-500/30 shrink-0">
-            <Shield size={14} className="text-red-400" />
+      <div className="flex items-center h-16 px-4 border-b border-border shrink-0">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="flex items-center justify-center w-8 h-8 rounded-xl gradient-primary shrink-0">
+            <Shield size={16} className="text-white" />
           </div>
           <AnimatePresence>
             {!collapsed && (
               <motion.span
-                initial={{ opacity: 0, x: -6 }}
+                initial={{ opacity: 0, x: -8 }}
                 animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -6 }}
+                exit={{ opacity: 0, x: -8 }}
                 transition={{ duration: 0.15 }}
-                className="text-xs font-bold tracking-widest text-foreground uppercase whitespace-nowrap"
+                className="text-sm font-bold tracking-tight text-foreground whitespace-nowrap"
               >
                 DRMS
               </motion.span>
@@ -89,8 +93,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto overflow-x-hidden">
-        {/* 3. Only render the role-filtered links IF the client has mounted */}
+      <nav className="flex-1 py-4 px-2.5 space-y-1 overflow-y-auto overflow-x-hidden">
         {isMounted && visible.map((item) => {
           const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href.split("#")[0]))
           return (
@@ -99,10 +102,10 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
               href={item.href}
               title={collapsed ? item.label : undefined}
               className={cn(
-                "flex items-center gap-3 rounded-md px-2.5 py-2 text-sm transition-all duration-150",
+                "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-all duration-200",
                 isActive
-                  ? "bg-accent text-accent-foreground font-medium"
-                  : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                  ? "gradient-primary text-white font-medium shadow-md shadow-primary/20"
+                  : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
               )}
             >
               <span className="shrink-0">{item.icon}</span>
@@ -124,11 +127,26 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
         })}
       </nav>
 
-      {/* Collapse toggle */}
-      <div className="border-t border-border p-2 shrink-0">
+      {/* Logout & Collapse toggle */}
+      <div className="border-t border-border p-2.5 shrink-0 space-y-1">
+        <button
+          onClick={() => {
+            logout()
+            // Router is safely called inside an event handler
+            router.push("/auth")
+          }}
+          className={cn(
+            "w-full flex items-center gap-3 rounded-xl p-2.5 text-sm text-destructive hover:bg-destructive/10 transition-colors",
+            collapsed && "justify-center px-2"
+          )}
+          title="Sign Out"
+        >
+          <LogOut size={16} className="shrink-0" />
+          {!collapsed && <span className="truncate font-medium">Sign Out</span>}
+        </button>
         <button
           onClick={onToggle}
-          className="w-full flex items-center justify-center rounded-md p-2 text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+          className="w-full flex items-center justify-center rounded-xl p-2 text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-colors"
           title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
           {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
